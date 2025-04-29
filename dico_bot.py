@@ -4,9 +4,12 @@ from discord.ext import commands,tasks
 import yt_download
 from bot_embed import youtube_embed
 import asyncio
+import link_check
+from dotenv import load_dotenv
+import os
 
-
-DISCORD_BOT_TOKEN = ""
+load_dotenv()
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -38,7 +41,7 @@ async def play_music(vc):
 def after_play(vc):
     fut = asyncio.run_coroutine_threadsafe(play_music(vc), bot.loop)
     fut.result()
-    
+        
 @bot.event
 async def on_ready():
     print("봇 스타트")
@@ -83,6 +86,12 @@ async def play(interaction:discord.Interaction, link:str):
         await interaction.response.send_message(embed=join_embed, ephemeral=True)
         return
     
+    if link_check.check_youtube_link(link)==False:
+        err_embed = discord.Embed(title = ":x: 올바르지 않은 링크입니다!", color = 0xFF0000)
+        await interaction.response.send_message(embed = err_embed,ephemeral=False)
+        return
+
+    
     channel = interaction.user.voice.channel
     vc = interaction.guild.voice_client
 
@@ -108,6 +117,6 @@ async def play(interaction:discord.Interaction, link:str):
         # #대기열에 음악 추가했음을 알리는 임베드 생성 
         # await interaction.edit_original_response(content = None, embed = app_embed)
         # #음악 준비 중 메시지 수정
-        await interaction.edit_original_response(content = f"대기열에 음악이 추가되었습니다.{str}")
+        await interaction.edit_original_response(content = f"대기열에 음악이 추가되었습니다.{link}")
 
 bot.run(DISCORD_BOT_TOKEN)
