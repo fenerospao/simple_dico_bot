@@ -26,17 +26,32 @@ async def play_music(vc):
     # except asyncio.TimeoutError:
     #     await vc.disconnect()
     #     return
-    if link_queue.qsize() > 0 :
-        info, interaction = await link_queue.get()
-        res = await yt_download.youtube_download.get_youtube_stream_url(info)
-        stream_url = res['url']
-        source = discord.FFmpegPCMAudio(stream_url, **yt_download.FFMPEG_OPTIONS)
-        vc.play(source, after=lambda e: after_play(vc))
-        # 음악 임베드 전송
-        yt_embed = youtube_embed.music_embed(res, interaction)
-        await interaction.followup.send(embed=yt_embed)
-    else:
+    
+    if link_queue.qsize() == 0 :
         print("대기열이 비어있음")
+        return
+
+    info, interaction = await link_queue.get()
+    res = await yt_download.youtube_download.get_youtube_stream_url(info)
+
+    if res=="ERROR":
+
+        down_fail = discord.Embed(title = ":x: 재생에 실패하였습니다!", color = 0xFF0000)
+        await interaction.edit_original_response(content = None, embed=down_fail)
+            
+        if link_queue.qsize()>0 :
+            asyncio.run_coroutine_threadsafe(play_music(vc),bot.loop)
+        else:
+            return
+            
+    stream_url = res['url']
+    source = discord.FFmpegPCMAudio(stream_url, **yt_download.FFMPEG_OPTIONS)
+    vc.play(source, after=lambda e: after_play(vc))
+
+    # 음악 임베드 전송
+    yt_embed = youtube_embed.music_embed(res, interaction)
+    await interaction.followup.send(embed=yt_embed)
+
 
 def after_play(vc):
     fut = asyncio.run_coroutine_threadsafe(play_music(vc), bot.loop)
@@ -44,13 +59,17 @@ def after_play(vc):
         
 @bot.event
 async def on_ready():
+
     print("봇 스타트")
+
     try:
         synced = await bot.tree.sync()
         print(f"{len(synced)}개의 명령어 동기화")
+
     except Exception as e:
         print(e)
-    await bot.change_presence(activity=discord.Game(name="버터 나비 쫓는 중..."))
+
+    await bot.change_presence(activity=discord.Game(name="버터 나비 쫓는 중..."))#봇 상태메시지
 
 async def join_channel(interaction):
    
@@ -58,18 +77,25 @@ async def join_channel(interaction):
     vc = interaction.guild.voice_client #봇이 접속한 음성 채널
 
     if vc is None:
+
         vc = await channel.connect()
         await interaction.response.send_message("음성채널에 참여합니다.", ephemeral=False)
+
     elif vc.channel != channel:
+
         await vc.move_to(channel)
         await interaction.response.send_message("채널을 옮깁니다.", ephemeral=False)
+
     else:
+
         await interaction.response.send_message("이미 음성채널에 접속하였습니다.", ephemeral=False)
+
 
 @bot.tree.command(name="접속",description="유저가 속한 음성채널에 접속합니다.")
 async def join(interaction:discord.Interaction):
 
     if not interaction.user.voice:
+
         join_embed = discord.Embed(title=":warning: 먼저 음성 채널에 들어가주세요!", color=0xFF0000)
         await interaction.response.send_message(embed=join_embed, ephemeral=True)
         return
@@ -82,11 +108,13 @@ async def join(interaction:discord.Interaction):
 async def play(interaction:discord.Interaction, link:str):
    
     if not interaction.user.voice:
+
         join_embed = discord.Embed(title=":warning: 먼저 음성 채널에 들어가주세요!", color=0xFF0000)
         await interaction.response.send_message(embed=join_embed, ephemeral=True)
         return
     
     if link_check.check_youtube_link(link)==False:
+
         err_embed = discord.Embed(title = ":x: 올바르지 않은 링크입니다!", color = 0xFF0000)
         await interaction.response.send_message(embed = err_embed,ephemeral=False)
         return
@@ -96,15 +124,18 @@ async def play(interaction:discord.Interaction, link:str):
     vc = interaction.guild.voice_client
 
     if vc is None:#봇이 음성 채널에 없는 경우
+
         await join_channel(interaction)
         vc = interaction.guild.voice_client
         await interaction.edit_original_response(content = "음악 준비 중.....")
 
     elif vc.channel!=channel:#봇의 음성 채널과 유저의 음성 채널이 다를때
+
         await join_channel(interaction)
         await interaction.edit_original_response(content = "음악 준비 중.....")
 
     else:#봇과 같은 음성채널일때
+
         await interaction.response.send_message("음악 준비 중.....",ephemeral=False)
 
     
@@ -112,6 +143,7 @@ async def play(interaction:discord.Interaction, link:str):
 
     if not vc.is_playing():
         await play_music(vc)
+
     else:
         # app_embed = youtube_embed.append_embed(str)
         # #대기열에 음악 추가했음을 알리는 임베드 생성 
