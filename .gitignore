@@ -175,4 +175,5 @@ cython_debug/
 
 .code-workspace
 
-
+# venv
+.idea/

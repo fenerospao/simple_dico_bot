@@ -2,15 +2,15 @@ import re
 import requests
 
 def check_youtube_link(link):
-
-    rex_link = re.compile(r'(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)')
-
-    res = rex_link.search(link)
-
-    if(res==None):
+    regex = re.compile(
+        r'^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w-]+'
+    )
+    if not regex.match(link):
         return False
-    
-    oembed_url = f"https://www.youtube.com/oembed?url={link}&format=json"
-    response = requests.get(oembed_url)
 
-    return response.status_code == 200
+    oembed_url = f"https://www.youtube.com/oembed?url={link}&format=json"
+    try:
+        response = requests.get(oembed_url, timeout=5)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
