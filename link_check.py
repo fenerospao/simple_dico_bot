@@ -3,7 +3,7 @@ import requests
 
 def check_youtube_link(link):
     regex = re.compile(
-        r'^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w-]+'
+        r'(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)'
     )
     if not regex.match(link):
         return False

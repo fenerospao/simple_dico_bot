@@ -1,5 +1,6 @@
 import discord
 from discord import app_commands
+from discord import VoiceChannel
 from discord.ext import commands,tasks
 import discord.voice_state
 import yt_download
@@ -81,12 +82,17 @@ async def join_channel(interaction):
 
 @tasks.loop(seconds=1.0)
 async def check_user(interaction:discord.Interaction):
-    member_num = interaction.guild.voice_client.channel.members
+    voice_client = discord.utils.get(bot.voice_clients,guild=interaction.guild)
 
-    if len(member_num) == 1:
-        print("stop check loop")
+    if voice_client and voice_client.channel:
+        vc = voice_client.channel
+        if len(vc.members) == 1:
+            print("stop checking loop")
+            check_user.stop()
+            await interaction.guild.voice_client.disconnect()
+    else:
+        print("stop checking loop")
         check_user.stop()
-        await interaction.guild.voice_client.disconnect()
 
 @bot.event
 async def on_ready():
