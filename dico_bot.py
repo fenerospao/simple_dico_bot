@@ -78,7 +78,7 @@ async def join_channel(interaction):
 
         await interaction.response.send_message("이미 음성채널에 접속하였습니다.", ephemeral=False)
 
-    check_user.start(interaction)    
+        
 
 @tasks.loop(seconds=1.0)
 async def check_user(interaction:discord.Interaction):
@@ -118,6 +118,9 @@ async def join(interaction:discord.Interaction):
         return
 
     await join_channel(interaction)
+
+    if not check_user.is_running():
+        check_user.start(interaction)
     
 
 @bot.tree.command(name="재생",description="음악을 재생합니다.")
@@ -154,6 +157,8 @@ async def play(interaction:discord.Interaction, link:str):
 
         await interaction.response.send_message("음악 준비 중.....",ephemeral=False)
 
+    if not check_user.is_running():
+        check_user.start(interaction)
     
     await link_queue.put((link, interaction))
 
